@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telecom Customer Churn Predictor</title>
+    <meta name="theme-color" content="#071015" />
+    <link rel="icon" href="../static/favicon.svg" type="image/svg+xml" />
+    <link rel="shortcut icon" href="../static/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --bg: #071015;
+        --bg-2: #101821;
+        --panel: rgba(12, 19, 27, 0.82);
+        --panel-strong: rgba(17, 26, 38, 0.96);
+        --panel-soft: rgba(255, 255, 255, 0.04);
+        --line: rgba(216, 229, 241, 0.09);
+        --text: #edf3f7;
+        --muted: #96aab8;
+        --highlight: #d9e7f2;
+        --accent: #7fc3ff;
+        --accent-2: #9fe6d4;
+        --danger: #ff7c6e;
+        --success: #44c78f;
+        --shadow: 0 30px 90px rgba(0, 0, 0, 0.36);
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 16px;
+        --max-width: 1240px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Avenir Next", "SF Pro Display", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 10% 16%, rgba(127, 195, 255, 0.15), transparent 24%),
+          radial-gradient(circle at 85% 14%, rgba(159, 230, 212, 0.12), transparent 22%),
+          radial-gradient(circle at 78% 82%, rgba(255, 124, 110, 0.08), transparent 18%),
+          linear-gradient(180deg, #071015 0%, #0b1219 34%, #101821 100%);
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 64px 64px;
+        mask-image: radial-gradient(circle at center, black 35%, transparent 82%);
+        pointer-events: none;
+        opacity: 0.34;
+      }
+
+      .shell {
+        position: relative;
+        width: min(calc(100% - 28px), var(--max-width));
+        margin: 0 auto;
+        padding: 12px 0 34px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 10px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background:
+          linear-gradient(145deg, rgba(127, 195, 255, 0.95), rgba(159, 230, 212, 0.9));
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.55),
+          0 12px 28px rgba(127, 195, 255, 0.18);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .brand-mark::after {
+        content: "";
+        position: absolute;
+        inset: 7px;
+        border-radius: 11px;
+        border: 1px solid rgba(7, 16, 24, 0.2);
+        background:
+          linear-gradient(180deg, rgba(7, 16, 24, 0.15), rgba(7, 16, 24, 0.38));
+      }
+
+      .brand-copy strong,
+      .brand-copy span {
+        display: block;
+      }
+
+      .brand-copy strong {
+        font-size: 0.98rem;
+        letter-spacing: 0.04em;
+      }
+
+      .brand-copy span {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .experience {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .panel {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+          var(--panel);
+        backdrop-filter: blur(16px);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .predictor {
+        padding: 18px;
+      }
+
+      .predictor-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+
+      .predictor-header h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.45rem, 2.6vw, 2.35rem);
+        line-height: 0.94;
+        max-width: 14ch;
+      }
+
+      .predictor-header p {
+        margin: 0;
+        max-width: 54ch;
+        color: var(--muted);
+        line-height: 1.42;
+        font-size: 0.9rem;
+      }
+
+      .signal-note {
+        min-width: 150px;
+        padding: 10px 12px;
+        border-radius: 20px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .signal-note .label {
+        color: var(--muted);
+        font-size: 0.74rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .signal-note .value {
+        margin-top: 6px;
+        font-size: 0.96rem;
+        font-weight: 700;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        color: #dbe8ed;
+        font-size: 0.78rem;
+        letter-spacing: 0.03em;
+      }
+
+      input,
+      select,
+      button {
+        border-radius: 15px;
+        font: inherit;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
+          rgba(7, 16, 24, 0.76);
+        outline: none;
+        transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+      }
+
+      .inline-input {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 88px;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .field,
+      .inline-input,
+      .inline-input > * {
+        min-width: 0;
+      }
+
+      input[type="number"] {
+        appearance: auto;
+        -moz-appearance: textfield;
+      }
+
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        opacity: 1;
+      }
+
+      #tenure_unit {
+        font-size: 0.74rem;
+        padding-left: 10px;
+        padding-right: 28px;
+      }
+
+      input:focus,
+      select:focus {
+        transform: translateY(-1px);
+        border-color: rgba(127, 195, 255, 0.72);
+        box-shadow: 0 0 0 4px rgba(127, 195, 255, 0.11);
+      }
+
+      .action-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        margin-top: 12px;
+      }
+
+      .action-row button {
+        flex: 1;
+        min-height: 46px;
+        padding: 12px 18px;
+        border: none;
+        cursor: pointer;
+        color: #091018;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        background: linear-gradient(135deg, #dce8f4 0%, #9fe6d4 42%, #7fc3ff 100%);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.45),
+          0 16px 35px rgba(127, 195, 255, 0.22);
+        transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+      }
+
+      .action-row button:hover {
+        transform: translateY(-2px);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.55),
+          0 22px 45px rgba(127, 195, 255, 0.28);
+      }
+
+      .action-row button:disabled {
+        opacity: 0.74;
+        cursor: wait;
+      }
+
+      .api-hint {
+        display: inline-flex;
+        align-items: center;
+        min-height: 46px;
+        padding: 0 16px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.035);
+        white-space: nowrap;
+      }
+
+      .error-message {
+        min-height: 22px;
+        margin-top: 10px;
+        color: #ffb7ad;
+        font-size: 0.88rem;
+      }
+
+      .fine-print {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.74rem;
+        line-height: 1.35;
+      }
+
+      .signal-stage {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 100%;
+      }
+
+      .result-shell {
+        position: relative;
+        min-height: 100%;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background:
+          radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05), transparent 55%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+        overflow: hidden;
+      }
+
+      #signal-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        perspective: 1200px;
+        pointer-events: none;
+      }
+
+      .orb-cluster {
+        position: relative;
+        width: 190px;
+        height: 190px;
+        transform-style: preserve-3d;
+        animation: clusterFloat 7s ease-in-out infinite;
+      }
+
+      .orb-core,
+      .orb-ring,
+      .orb-ring::before,
+      .orb-glow,
+      .orb-grid {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+      }
+
+      .orb-core {
+        inset: 40px;
+        background:
+          radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.9), transparent 16%),
+          linear-gradient(145deg, rgba(223, 233, 242, 0.92), rgba(127, 195, 255, 0.75));
+        box-shadow:
+          inset -24px -20px 42px rgba(7, 16, 24, 0.34),
+          inset 18px 18px 24px rgba(255, 255, 255, 0.16),
+          0 35px 70px rgba(127, 195, 255, 0.24);
+        transform: translateZ(32px);
+      }
+
+      .orb-grid {
+        inset: 52px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background:
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.03) 0 16px,
+            transparent 16px 32px
+          ),
+          repeating-linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.03) 0 16px,
+            transparent 16px 32px
+          );
+        transform: rotateX(66deg) translateZ(18px);
+        opacity: 0.9;
+      }
+
+      .orb-ring {
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        transform: rotateX(76deg);
+      }
+
+      .orb-ring::before {
+        content: "";
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        inset: 14px;
+      }
+
+      .orb-ring.ring-2 {
+        inset: 18px;
+        transform: rotateY(72deg);
+      }
+
+      .orb-ring.ring-3 {
+        inset: 34px;
+        transform: rotateX(30deg) rotateY(55deg);
+      }
+
+      .orb-glow {
+        inset: 18px;
+        background: radial-gradient(circle, rgba(127, 195, 255, 0.16) 0%, transparent 62%);
+        filter: blur(10px);
+        transform: translateZ(-18px) scale(1.18);
+      }
+
+      .result-overlay {
+        position: relative;
+        z-index: 2;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 100%;
+      }
+
+      .result-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+      }
+
+      .result-heading h2 {
+        margin: 0 0 6px;
+        font-size: 1.02rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .result-heading p {
+        margin: 0;
+        max-width: 30ch;
+        color: var(--muted);
+        line-height: 1.45;
+        font-size: 0.88rem;
+      }
+
+      .mini-kpi {
+        min-width: 110px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--line);
+        text-align: right;
+      }
+
+      .mini-kpi strong,
+      .mini-kpi span {
+        display: block;
+      }
+
+      .mini-kpi span {
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .mini-kpi strong {
+        margin-top: 8px;
+        font-size: 1.22rem;
+      }
+
+      .result-panel {
+        align-self: stretch;
+        margin-top: auto;
+        padding: 16px;
+        border-radius: 18px;
+        background: rgba(7, 16, 24, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(14px);
+      }
+
+      .result-top {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .status-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 64px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        font-size: clamp(0.94rem, 1.6vw, 1.18rem);
+        font-weight: 800;
+        text-align: center;
+        letter-spacing: 0.04em;
+      }
+
+      .status-badge.high {
+        color: #fff4f2;
+        background:
+          linear-gradient(135deg, rgba(255, 107, 95, 0.94), rgba(167, 34, 41, 0.96));
+        box-shadow: 0 18px 34px rgba(167, 34, 41, 0.28);
+      }
+
+      .status-badge.low {
+        color: #effff7;
+        background:
+          linear-gradient(135deg, rgba(62, 213, 152, 0.95), rgba(13, 126, 97, 0.95));
+        box-shadow: 0 18px 34px rgba(13, 126, 97, 0.26);
+      }
+
+      .confidence {
+        min-width: 128px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .confidence .label {
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .confidence .value {
+        margin-top: 8px;
+        font-size: 1.6rem;
+        font-weight: 800;
+      }
+
+      .result-stats {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .result-stat {
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.035);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .result-stat .kicker {
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .result-stat .number {
+        margin-top: 8px;
+        font-size: 1.2rem;
+        font-weight: 750;
+      }
+
+      .reason-list {
+        list-style: none;
+        margin: 12px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+      }
+
+      .reason-list li {
+        padding: 11px 13px;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.045);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        color: #dce7ea;
+        line-height: 1.45;
+        font-size: 0.86rem;
+      }
+
+      .empty-state {
+        padding: 18px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .metrics-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .metric {
+        padding: 18px 20px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)),
+          var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .metric .label {
+        color: var(--muted);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .metric .value {
+        margin-top: 10px;
+        font-size: clamp(1.45rem, 3vw, 2.1rem);
+        font-weight: 800;
+      }
+
+      .story-grid {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 20px;
+      }
+
+      .story-card {
+        padding: 24px;
+      }
+
+      .story-card h3 {
+        margin: 0 0 10px;
+        font-size: 1.35rem;
+      }
+
+      .story-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .story-points {
+        margin-top: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .story-point {
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: var(--panel-soft);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .story-point strong,
+      .story-point span {
+        display: block;
+      }
+
+      .story-point strong {
+        margin-bottom: 6px;
+        font-size: 0.98rem;
+      }
+
+      .story-point span {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      body[data-risk="high"] .orb-core {
+        background:
+          radial-gradient(circle at 30% 28%, rgba(255, 241, 232, 0.9), transparent 16%),
+          linear-gradient(145deg, rgba(255, 175, 164, 0.95), rgba(255, 96, 96, 0.82));
+        box-shadow:
+          inset -24px -20px 42px rgba(56, 4, 5, 0.42),
+          inset 18px 18px 24px rgba(255, 255, 255, 0.13),
+          0 35px 85px rgba(255, 98, 85, 0.34);
+      }
+
+      body[data-risk="high"] .orb-glow {
+        background: radial-gradient(circle, rgba(255, 90, 74, 0.28) 0%, transparent 62%);
+      }
+
+      body[data-risk="low"] .orb-core {
+        background:
+          radial-gradient(circle at 30% 28%, rgba(243, 255, 250, 0.92), transparent 16%),
+          linear-gradient(145deg, rgba(185, 237, 220, 0.95), rgba(68, 199, 143, 0.84));
+        box-shadow:
+          inset -24px -20px 42px rgba(3, 46, 31, 0.42),
+          inset 18px 18px 24px rgba(255, 255, 255, 0.13),
+          0 35px 85px rgba(43, 187, 136, 0.3);
+      }
+
+      body[data-risk="low"] .orb-glow {
+        background: radial-gradient(circle, rgba(62, 213, 152, 0.24) 0%, transparent 62%);
+      }
+
+      .result-flash {
+        animation: resultFlash 760ms ease;
+      }
+
+      .pulse-high {
+        animation: pulseHigh 900ms ease;
+      }
+
+      .pulse-low {
+        animation: pulseLow 900ms ease;
+      }
+
+      @keyframes clusterFloat {
+        0%,
+        100% {
+          transform: rotateX(8deg) rotateY(-12deg) translateY(0);
+        }
+        50% {
+          transform: rotateX(12deg) rotateY(12deg) translateY(-10px);
+        }
+      }
+
+      @keyframes resultFlash {
+        0% {
+          transform: scale(0.97);
+          opacity: 0.55;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes pulseHigh {
+        0% {
+          box-shadow: 0 0 0 0 rgba(255, 98, 85, 0.45);
+        }
+        100% {
+          box-shadow: 0 0 0 24px rgba(255, 98, 85, 0);
+        }
+      }
+
+      @keyframes pulseLow {
+        0% {
+          box-shadow: 0 0 0 0 rgba(43, 187, 136, 0.42);
+        }
+        100% {
+          box-shadow: 0 0 0 24px rgba(43, 187, 136, 0);
+        }
+      }
+
+      @media (max-width: 920px) {
+        .experience,
+        .story-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .form-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .predictor-header {
+          flex-direction: column;
+        }
+
+        .signal-note {
+          min-width: 0;
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 840px) {
+        .metrics-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 720px) {
+        .shell {
+          width: min(calc(100% - 18px), var(--max-width));
+          padding-top: 14px;
+        }
+
+        .topbar {
+          margin-bottom: 14px;
+        }
+
+        .predictor,
+        .signal-stage,
+        .story-card {
+          padding: 18px;
+        }
+
+        .predictor-header h1 {
+          max-width: none;
+          font-size: clamp(1.85rem, 11vw, 2.8rem);
+        }
+
+        .form-grid,
+        .metrics-strip,
+        .result-stats,
+        .result-top {
+          grid-template-columns: 1fr;
+        }
+
+        .inline-input {
+          grid-template-columns: minmax(0, 1fr) 96px;
+        }
+
+        .signal-stage {
+          order: 2;
+        }
+
+        .predictor {
+          order: 1;
+        }
+
+        .result-shell,
+        .result-overlay {
+          min-height: 360px;
+        }
+
+        .orb-cluster {
+          width: 185px;
+          height: 185px;
+        }
+
+        .confidence,
+        .mini-kpi {
+          min-width: 0;
+          text-align: left;
+        }
+
+        .action-row {
+          flex-direction: column;
+        }
+
+        .action-row button,
+        .api-hint {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body data-risk="neutral">
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark"></div>
+          <div class="brand-copy">
+            <strong>Telecom Churn Predictor</strong>
+            <span>Retention scoring for customer success teams</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="experience">
+        <article class="panel predictor" id="predictor-panel">
+          <div class="predictor-header">
+            <div>
+              <h1>Predict churn before the customer leaves.</h1>
+              <p>
+                Score a telecom profile, surface the strongest churn drivers, and turn a raw model
+                output into a clear live retention signal for customer success teams.
+              </p>
+            </div>
+            <div class="signal-note">
+              <div class="label">Live Model</div>
+              <div class="value">Random Forest</div>
+            </div>
+          </div>
+
+          <form id="prediction-form">
+            <div class="form-grid">
+              <div class="field">
+                <label for="tenure_months">Tenure</label>
+                <div class="inline-input">
+                  <input id="tenure_months" name="tenure_months" type="number" min="0" max="120" placeholder="Enter value" required />
+                  <select id="tenure_unit" name="tenure_unit" aria-label="Tenure unit">
+                    <option value="months" selected>Months</option>
+                    <option value="years">Years</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="monthly_charges">Monthly Charges ($)</label>
+                <input id="monthly_charges" name="monthly_charges" type="number" min="0" max="500" step="0.01" placeholder="0.00" required />
+              </div>
+              <div class="field">
+                <label for="number_of_lines">Number of lines</label>
+                <select id="number_of_lines" name="number_of_lines" required>
+                  <option value="" selected disabled>Select</option>
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5+</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="contract_type">Contract type</label>
+                <select id="contract_type" name="contract_type" required>
+                  <option value="" selected disabled>Select contract</option>
+                  <option value="Month-to-month">Month-to-month</option>
+                  <option value="One year">1 Year</option>
+                  <option value="Two year">2 Year</option>
+                  <option value="Three year">3 Year</option>
+                  <option value="Three years or more">3+ Year</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="has_tech_support">Has Tech Support</label>
+                <select id="has_tech_support" name="has_tech_support" required>
+                  <option value="" selected disabled>Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="support_calls">Number of support calls</label>
+                <input id="support_calls" name="support_calls" type="number" min="0" max="20" placeholder="0" required />
+              </div>
+              <div class="field full">
+                <label for="payment_method">Payment method</label>
+                <select id="payment_method" name="payment_method" required>
+                  <option value="" selected disabled>Select payment method</option>
+                  <option value="Electronic check">Electronic check</option>
+                  <option value="Mailed check">Mailed check</option>
+                  <option value="Bank transfer">Bank transfer</option>
+                  <option value="Credit card">Credit card</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button id="submit-button" type="submit">Run Churn Signal</button>
+              <div class="api-hint">POST /predict</div>
+            </div>
+
+            <div class="error-message" id="error-message" aria-live="polite"></div>
+            <div class="fine-print">
+              The source IBM Telco dataset does not include a native support-call field. The app
+              trains on real dataset-backed features and applies a documented support-call
+              calibration after model scoring.
+            </div>
+          </form>
+        </article>
+
+        <aside class="panel signal-stage" id="result-panel">
+          <div class="result-shell">
+            <canvas id="signal-canvas"></canvas>
+            <div class="scene">
+              <div class="orb-cluster" id="orb-cluster">
+                <div class="orb-glow"></div>
+                <div class="orb-ring ring-1"></div>
+                <div class="orb-ring ring-2"></div>
+                <div class="orb-ring ring-3"></div>
+                <div class="orb-grid"></div>
+                <div class="orb-core"></div>
+              </div>
+            </div>
+            <div class="result-overlay">
+              <div class="result-heading">
+                <div>
+                  <h2>Prediction Console</h2>
+                  <p>The visual state and motion language respond to the churn result.</p>
+                </div>
+                <div class="mini-kpi">
+                  <span>ROC AUC</span>
+                  <strong id="metric-roc-auc">0.836</strong>
+                </div>
+              </div>
+
+              <div class="result-panel" id="result-content">
+                <div class="empty-state">
+                  Fill in the customer details and run the model. The orb, colors, and result
+                  panel will shift based on whether the profile looks stable or at risk.
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="metrics-strip">
+        <div class="metric">
+          <div class="label">Model Accuracy</div>
+          <div class="value" id="metric-accuracy">75.5%</div>
+        </div>
+        <div class="metric">
+          <div class="label">Training Rows</div>
+          <div class="value" id="metric-train-rows">5634</div>
+        </div>
+        <div class="metric">
+          <div class="label">Test Rows</div>
+          <div class="value" id="metric-test-rows">1409</div>
+        </div>
+        <div class="metric">
+          <div class="label">Feature Group</div>
+          <div class="value">Customer + Billing</div>
+        </div>
+      </section>
+
+      <section class="story-grid">
+        <article class="panel story-card">
+          <h3>Built to read like a polished product, not a generic calculator.</h3>
+          <p>
+            The page leads with the prediction workflow, keeps the primary action visible on
+            smaller screens, and gives the result panel enough personality to feel memorable
+            without getting noisy.
+          </p>
+        </article>
+        <article class="panel story-card">
+          <div class="story-points">
+            <div class="story-point">
+              <strong>Cleaner first impression</strong>
+              <span>A calmer palette and tighter hierarchy make the app feel more premium and less template-driven.</span>
+            </div>
+            <div class="story-point">
+              <strong>Result-driven animation</strong>
+              <span>High-risk results shift the scene into alert mode, while low-risk results settle into a steadier signal state.</span>
+            </div>
+            <div class="story-point">
+              <strong>Better mobile priority</strong>
+              <span>The form stays near the top so visitors do not have to scroll through filler before using the app.</span>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+
+    <script>
+      const defaultModelMetrics = {
+        accuracy: 0.7551,
+        roc_auc: 0.8357,
+        train_rows: 5634,
+        test_rows: 1409,
+      };
+
+      function resolveModelMetrics() {
+        const rawMetrics = `{{ model_metrics|tojson }}`;
+        const unresolvedToken = String.fromCharCode(123, 123);
+        if (!rawMetrics || rawMetrics.includes(unresolvedToken)) {
+          return defaultModelMetrics;
+        }
+        try {
+          return { ...defaultModelMetrics, ...JSON.parse(rawMetrics) };
+        } catch (error) {
+          return defaultModelMetrics;
+        }
+      }
+
+      const modelMetrics = resolveModelMetrics();
+
+      const form = document.getElementById("prediction-form");
+      const resultContent = document.getElementById("result-content");
+      const resultPanel = document.getElementById("result-panel");
+      const submitButton = document.getElementById("submit-button");
+      const errorMessage = document.getElementById("error-message");
+      const orbCluster = document.getElementById("orb-cluster");
+      const monthlyChargesInput = document.getElementById("monthly_charges");
+      const canvas = document.getElementById("signal-canvas");
+      const context = canvas.getContext("2d");
+
+      document.getElementById("metric-roc-auc").textContent = modelMetrics.roc_auc.toFixed(3);
+      document.getElementById("metric-accuracy").textContent = `${(modelMetrics.accuracy * 100).toFixed(1)}%`;
+      document.getElementById("metric-train-rows").textContent = String(modelMetrics.train_rows);
+      document.getElementById("metric-test-rows").textContent = String(modelMetrics.test_rows);
+
+      monthlyChargesInput.addEventListener("blur", () => {
+        if (monthlyChargesInput.value === "") {
+          return;
+        }
+        const parsed = Number(monthlyChargesInput.value);
+        if (!Number.isNaN(parsed)) {
+          monthlyChargesInput.value = parsed.toFixed(2);
+        }
+      });
+
+      const particles = [];
+      let particleCount = 44;
+
+      function resizeCanvas() {
+        const ratio = window.devicePixelRatio || 1;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+
+      function setSceneRisk(risk) {
+        document.body.dataset.risk = risk;
+      }
+
+      function buildParticles(mode) {
+        particles.length = 0;
+        const width = canvas.clientWidth || 320;
+        const height = canvas.clientHeight || 320;
+        particleCount = window.innerWidth < 720 ? 28 : 44;
+
+        for (let index = 0; index < particleCount; index += 1) {
+          particles.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            radius: Math.random() * 2.2 + 0.8,
+            speedX: (Math.random() - 0.5) * (mode === "high" ? 0.8 : 0.42),
+            speedY: (Math.random() - 0.5) * (mode === "high" ? 0.8 : 0.42),
+            alpha: Math.random() * 0.45 + 0.15,
+          });
+        }
+      }
+
+      function particleColor(mode, alpha) {
+        if (mode === "high") {
+          return `rgba(255, 117, 98, ${alpha})`;
+        }
+        if (mode === "low") {
+          return `rgba(78, 214, 192, ${alpha})`;
+        }
+        return `rgba(127, 195, 255, ${alpha})`;
+      }
+
+      let sceneMode = "neutral";
+      function animateParticles() {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        context.clearRect(0, 0, width, height);
+
+        particles.forEach((particle) => {
+          particle.x += particle.speedX;
+          particle.y += particle.speedY;
+
+          if (particle.x < 0 || particle.x > width) {
+            particle.speedX *= -1;
+          }
+          if (particle.y < 0 || particle.y > height) {
+            particle.speedY *= -1;
+          }
+
+          context.beginPath();
+          context.fillStyle = particleColor(sceneMode, particle.alpha);
+          context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+          context.fill();
+        });
+
+        for (let i = 0; i < particles.length; i += 1) {
+          for (let j = i + 1; j < particles.length; j += 1) {
+            const first = particles[i];
+            const second = particles[j];
+            const dx = first.x - second.x;
+            const dy = first.y - second.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < 92) {
+              context.beginPath();
+              context.strokeStyle = particleColor(sceneMode, 0.14 - distance / 920);
+              context.lineWidth = 1;
+              context.moveTo(first.x, first.y);
+              context.lineTo(second.x, second.y);
+              context.stroke();
+            }
+          }
+        }
+
+        requestAnimationFrame(animateParticles);
+      }
+
+      function renderResult(data) {
+        const isHighRisk = data.risk_level === "HIGH CHURN RISK";
+        const badgeClass = isHighRisk ? "high" : "low";
+        const badgeText = isHighRisk ? "HIGH CHURN RISK 🔴" : "LOW CHURN RISK 🟢";
+        const probability = `${(data.churn_probability * 100).toFixed(1)}%`;
+        const confidence = `${data.confidence_percentage.toFixed(1)}%`;
+        const reasons = (data.top_reasons || []).map((reason) => `<li>${reason}</li>`).join("");
+
+        resultContent.innerHTML = `
+          <div class="result-top">
+            <div class="status-badge ${badgeClass}">${badgeText}</div>
+            <div class="confidence">
+              <div class="label">Confidence</div>
+              <div class="value">${confidence}</div>
+            </div>
+          </div>
+          <div class="result-stats">
+            <div class="result-stat">
+              <div class="kicker">Churn Probability</div>
+              <div class="number">${probability}</div>
+            </div>
+            <div class="result-stat">
+              <div class="kicker">Base Model</div>
+              <div class="number">${(data.base_model_probability * 100).toFixed(1)}%</div>
+            </div>
+          </div>
+          <ul class="reason-list">${reasons}</ul>
+        `;
+
+        const nextMode = isHighRisk ? "high" : "low";
+        sceneMode = nextMode;
+        setSceneRisk(nextMode);
+        buildParticles(nextMode);
+
+        orbCluster.classList.remove("pulse-high", "pulse-low");
+        resultPanel.classList.remove("result-flash");
+
+        void orbCluster.offsetWidth;
+        void resultPanel.offsetWidth;
+
+        orbCluster.classList.add(isHighRisk ? "pulse-high" : "pulse-low");
+        resultPanel.classList.add("result-flash");
+
+        if (window.innerWidth < 720) {
+          document.getElementById("predictor-panel").scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        errorMessage.textContent = "";
+        submitButton.disabled = true;
+        submitButton.textContent = "Scoring signal...";
+
+        const tenureValue = Number(document.getElementById("tenure_months").value);
+        const tenureUnit = document.getElementById("tenure_unit").value;
+        const tenureMonths = tenureUnit === "years" ? tenureValue * 12 : tenureValue;
+
+        const payload = {
+          tenure_months: tenureMonths,
+          monthly_charges: Number(document.getElementById("monthly_charges").value),
+          number_of_lines: Number(document.getElementById("number_of_lines").value),
+          contract_type: document.getElementById("contract_type").value,
+          has_tech_support: document.getElementById("has_tech_support").value,
+          support_calls: Number(document.getElementById("support_calls").value),
+          payment_method: document.getElementById("payment_method").value,
+        };
+
+        try {
+          const response = await fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || "Prediction request failed.");
+          }
+          renderResult(data);
+        } catch (error) {
+          errorMessage.textContent = error.message;
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = "Run Churn Signal";
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        resizeCanvas();
+        buildParticles(sceneMode);
+      });
+
+      resizeCanvas();
+      buildParticles(sceneMode);
+      animateParticles();
+    </script>
+  </body>
+</html>
